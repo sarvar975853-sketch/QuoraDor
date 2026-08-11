@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>QUORADOR — Outwit. Block. Reach.</title>
+<style>
+/* =========================================================
+   QUORADOR — Design tokens
+   Palette: midnight study, brass & lantern-light
+   -- bg-0  #0b0d13  deepest background
+   -- bg-1  #12151d  panel background
+   -- bg-2  #1a1f2b  raised panel
+   -- line  rgba(255,255,255,0.08)
+   -- brass #c9a24d  primary accent (walls / brand)
+   -- brass-dim #8a713a
+   -- crimson #e2483d  Player 1
+   -- azure  #3d8fe2  Player 2
+   -- ink    #e9e6de  primary text (warm parchment white)
+   -- ink-dim #9aa0ad
+   Type: 'Iowan Old Style'/Georgia serif for display (regal, board-game),
+         system-ui for interface text, ui-monospace for numerals/labels
+   ========================================================= */
+:root{
+  --bg-0:#0a0c11;
+  --bg-1:#12151d;
+  --bg-2:#1b202c;
+  --bg-3:#232a38;
+  --line: rgba(233,230,222,0.09);
+  --line-strong: rgba(233,230,222,0.16);
+  --brass:#c9a24d;
+  --brass-bright:#e8c377;
+  --brass-dim:#7a6234;
+  --crimson:#e2483d;
+  --crimson-glow: rgba(226,72,61,0.55);
+  --azure:#3d8fe2;
+  --azure-glow: rgba(61,143,226,0.55);
+  --ink:#eee9de;
+  --ink-dim:#9aa0ad;
+  --ink-faint:#5c6270;
+  --good:#4bbf8a;
+  --bad:#e2483d;
+  --radius-lg:22px;
+  --radius-md:14px;
+  --radius-sm:8px;
+  --shadow-deep: 0 20px 60px -20px rgba(0,0,0,0.7);
+  --font-display: 'Iowan Old Style','Palatino Linotype','Georgia', 'Times New Roman', serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background: radial-gradient(1200px 800px at 50% -10%, #171b26 0%, var(--bg-0) 55%, #060709 100%);
+  color:var(--ink);
+  font-family: var(--font-ui);
+  overflow:hidden;
+  overscroll-behavior:none;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;
+}
+button{ font-family:inherit; }
+::selection{ background: var(--brass); color:#111; }
+
+/* subtle grain texture via layered gradients (no external assets) */
+.grain{
+  position:fixed; inset:0; pointer-events:none; z-index:1;
+  opacity:0.05;
+  background-image:
+    radial-gradient(circle at 20% 30%, #fff 0.4px, transparent 0.4px),
+    radial-gradient(circle at 70% 65%, #fff 0.4px, transparent 0.4px),
+    radial-gradient(circle at 40% 80%, #fff 0.4px, transparent 0.4px);
+  background-size: 3px 3px, 5px 5px, 4px 4px;
+}
+
+#app{ position:relative; width:100vw; height:100vh; height:100dvh; overflow:hidden; }
+
+.screen{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column;
+  opacity:0; pointer-events:none;
+  transition: opacity .45s ease;
+  z-index:5;
+}
+.screen.active{ opacity:1; pointer-events:auto; }
+
+/* ---------------- Splash ---------------- */
+#screen-splash{ background: var(--bg-0); }
+.splash-particles{ position:absolute; inset:0; overflow:hidden; }
+.splash-particles span{
+  position:absolute; width:3px; height:3px; border-radius:50%;
+  background: var(--brass); opacity:.35;
+  animation: floaty 7s linear infinite;
+}
+@keyframes floaty{
+  0%{ transform:translateY(0) translateX(0); opacity:0;}
+  10%{ opacity:.45;}
+  90%{ opacity:.25;}
+  100%{ transform:translateY(-140px) translateX(12px); opacity:0;}
+}
+.splash-mark{ position:relative; text-align:center; z-index:2; }
+.splash-grid{
+  width:96px;height:96px;margin:0 auto 26px;
+  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:6px;
+  opacity:0; transform:scale(.7);
+  animation: gridIn 1.1s cubic-bezier(.2,.8,.2,1) forwards;
+}
+.splash-grid i{
+  display:block; border-radius:3px;
+  background: linear-gradient(160deg, var(--bg-3), var(--bg-2));
+  border:1px solid var(--line-strong);
+}
+.splash-grid i:nth-child(5){
+  background: radial-gradient(circle at 35% 30%, var(--brass-bright), var(--brass) 60%, var(--brass-dim));
+  box-shadow: 0 0 22px 4px rgba(201,162,77,0.55);
+}
+@keyframes gridIn{ to{ opacity:1; transform:scale(1);} }
+.splash-title{
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 9vw, 4.4rem);
+  letter-spacing:.16em;
+  font-weight:600;
+  color: var(--ink);
+  margin:0;
+  opacity:0;
+  text-shadow: 0 0 24px rgba(201,162,77,0.0);
+  animation: titleIn 1s .25s cubic-bezier(.2,.8,.2,1) forwards, glowPulse 2.4s 1.3s ease-in-out infinite;
+}
+@keyframes titleIn{
+  from{ opacity:0; transform:translateY(14px) scale(.96); letter-spacing:.4em;}
+  to{ opacity:1; transform:translateY(0) scale(1); letter-spacing:.16em;}
+}
+@keyframes glowPulse{
+  0%,100%{ text-shadow: 0 0 18px rgba(201,162,77,.25); }
+  50%{ text-shadow: 0 0 30px rgba(201,162,77,.55); }
+}
+.splash-sub{
+  margin-top:10px; font-size:.78rem; letter-spacing:.4em; color: var(--ink-dim);
+  text-transform:uppercase; opacity:0;
+  animation: subIn 1s .55s ease forwards;
+}
+@keyframes subIn{ to{ opacity:1; } }
+.splash-loading{
+  margin-top:34px; width:160px; height:2px; border-radius:2px; overflow:hidden;
+  background: var(--line); opacity:0; animation: subIn 1s .7s ease forwards;
+}
+.splash-loading b{
+  display:block; height:100%; width:40%; border-radius:2px;
+  background: linear-gradient(90deg, transparent, var(--brass), transparent);
+  animation: load 1.3s ease-in-out infinite;
+}
+@keyframes load{
+  0%{ transform:translateX(-120%); }
+  100%{ transform:translateX(340%); }
+}
+
+/* ---------------- Shared panel look ---------------- */
+.glass{
+  background: linear-gradient(155deg, rgba(35,42,56,0.62), rgba(18,21,29,0.72));
+  border:1px solid var(--line-strong);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: var(--shadow-deep), inset 0 1px 0 rgba(255,255,255,0.04);
+  border-radius: var(--radius-lg);
+}
+
+/* ---------------- Menu ---------------- */
+#screen-menu{ background: transparent; padding:24px; }
+.menu-panel{
+  width:min(420px, 90vw);
+  padding:38px 32px 32px;
+  display:flex; flex-direction:column; align-items:center;
+  animation: panelIn .5s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes panelIn{ from{ opacity:0; transform:translateY(18px) scale(.98);} to{opacity:1; transform:none;} }
+.brand-title{
+  font-family:var(--font-display); font-size:clamp(2rem,7vw,2.7rem);
+  letter-spacing:.14em; margin:0; text-align:center;
+  background: linear-gradient(180deg, var(--brass-bright), var(--brass) 60%, var(--brass-dim));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter: drop-shadow(0 2px 10px rgba(0,0,0,.5));
+}
+.brand-sub{
+  font-size:.68rem; letter-spacing:.35em; color:var(--ink-dim); text-transform:uppercase;
+  margin:6px 0 30px;
+}
+.menu-btn{
+  width:100%; padding:15px 20px; margin-bottom:12px;
+  background: var(--bg-2); border:1px solid var(--line-strong); color:var(--ink);
+  border-radius: var(--radius-md); font-size:.98rem; letter-spacing:.04em; font-weight:600;
+  cursor:pointer; text-align:left; position:relative; overflow:hidden;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.menu-btn .k{ opacity:.5; font-family:var(--font-mono); font-size:.72rem; }
+.menu-btn:hover, .menu-btn:focus-visible{
+  background: linear-gradient(160deg, var(--bg-3), var(--bg-2));
+  border-color: rgba(201,162,77,.5);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px -12px rgba(201,162,77,.35);
+  outline:none;
+}
+.menu-btn:active{ transform: translateY(0) scale(.99); }
+.menu-btn.primary{
+  background: linear-gradient(160deg, var(--brass-bright), var(--brass) 70%);
+  color:#241a08; border-color: transparent; font-weight:700;
+  box-shadow: 0 14px 30px -12px rgba(201,162,77,.55);
+}
+.menu-btn.primary:hover{ transform: translateY(-2px) scale(1.01); filter:brightness(1.05); }
+.menu-foot{ margin-top:18px; font-size:.72rem; color:var(--ink-faint); text-align:center; line-height:1.6; }
+
+/* ---------------- Sub panels (howto / settings) ---------------- */
+.sub-panel{
+  width:min(560px, 92vw); max-height:86vh; overflow-y:auto;
+  padding:30px 30px 26px;
+  animation: panelIn .4s cubic-bezier(.2,.8,.2,1);
+}
+.sub-panel h2{
+  font-family:var(--font-display); letter-spacing:.06em; font-size:1.5rem; margin:0 0 4px;
+  color: var(--brass-bright);
+}
+.sub-panel .lede{ color:var(--ink-dim); font-size:.85rem; margin-bottom:20px; }
+.howto-row{
+  display:flex; gap:14px; padding:14px 0; border-top:1px solid var(--line);
+}
+.howto-row:first-of-type{ border-top:none; }
+.howto-ico{
+  width:40px;height:40px;flex:0 0 40px; border-radius:10px;
+  background: var(--bg-3); display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--line-strong);
+}
+.howto-text b{ display:block; margin-bottom:2px; font-size:.92rem; }
+.howto-text span{ color:var(--ink-dim); font-size:.82rem; line-height:1.5; }
+.mini-demo{
+  margin:16px 0; padding:16px; background:var(--bg-1); border-radius:var(--radius-md);
+  border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+}
+.close-row{ margin-top:22px; display:flex; justify-content:flex-end; gap:10px;}
+
+.setting-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 0; border-top:1px solid var(--line);
+}
+.setting-row:first-of-type{ border-top:none; }
+.setting-row .label b{ display:block; font-size:.92rem; }
+.setting-row .label span{ color:var(--ink-dim); font-size:.78rem; }
+.switch{
+  width:46px; height:26px; border-radius:14px; background:var(--bg-3); border:1px solid var(--line-strong);
+  position:relative; cursor:pointer; flex:0 0 46px;
+}
+.switch b{
+  position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%;
+  background: var(--ink-dim); transition: transform .22s ease, background .22s ease;
+}
+.switch.on{ background: rgba(201,162,77,.28); border-color: var(--brass-dim); }
+.switch.on b{ transform:translateX(20px); background: var(--brass-bright); }
+.seg{
+  display:flex; gap:6px; background:var(--bg-1); padding:4px; border-radius:10px; border:1px solid var(--line);
+}
+.seg button{
+  border:none; background:transparent; color:var(--ink-dim); padding:7px 12px; border-radius:7px;
+  font-size:.78rem; cursor:pointer; font-weight:600; letter-spacing:.02em;
+}
+.seg button.active{ background: var(--brass); color:#241a08; }
+.btn-ghost{
+  padding:10px 18px; border-radius:10px; background:transparent; color:var(--ink-dim);
+  border:1px solid var(--line-strong); cursor:pointer; font-size:.85rem;
+}
+.btn-ghost:hover{ color:var(--ink); border-color: var(--line-strong); background: var(--bg-2); }
+.btn-solid{
+  padding:10px 20px; border-radius:10px; background:var(--brass); color:#241a08;
+  border:none; cursor:pointer; font-weight:700; font-size:.85rem;
+}
+.btn-solid:hover{ filter:brightness(1.08); }
+
+/* ---------------- Game Screen ---------------- */
+#screen-game{ padding: 10px; }
+.game-wrap{
+  width:100%; height:100%; max-width:1180px; max-height:960px;
+  display:grid; grid-template-rows:auto 1fr auto; gap:10px; padding:14px;
+}
+.hud-top{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:10px 16px; border-radius: var(--radius-md);
+}
+.hud-title{
+  font-family:var(--font-display); letter-spacing:.14em; font-size:1.05rem; color:var(--brass-bright);
+  display:flex; align-items:center; gap:10px;
+}
+.hud-title .dot{ width:7px;height:7px;border-radius:50%; background:var(--brass); box-shadow:0 0 8px var(--brass);}
+.hud-actions{ display:flex; gap:8px; }
+.icon-btn{
+  width:36px;height:36px; border-radius:10px; border:1px solid var(--line-strong); background:var(--bg-2);
+  color:var(--ink-dim); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition: all .15s ease;
+}
+.icon-btn:hover{ color:var(--ink); border-color: rgba(201,162,77,.5); background:var(--bg-3); }
+
+.board-area{
+  display:flex; align-items:center; justify-content:center; min-height:0; position:relative;
+}
+.board-frame{
+  position:relative; border-radius: var(--radius-lg);
+  padding: 3.2%;
+  background: linear-gradient(160deg, #241d12, #1a1510 55%, #120e0a);
+  border: 1px solid rgba(201,162,77,0.25);
+  box-shadow: var(--shadow-deep), inset 0 0 0 1px rgba(255,255,255,0.03), inset 0 2px 18px rgba(0,0,0,.55);
+  aspect-ratio: 1/1;
+  height: min(100%, 100%);
+  max-width: 100%;
+}
+#boardCanvas{ display:block; width:100%; height:100%; touch-action:none; border-radius: 12px; cursor:pointer;}
+
+.ai-thinking{
+  position:absolute; top:10px; left:50%; transform:translate(-50%,-140%);
+  padding:7px 14px; border-radius:20px; font-size:.72rem; letter-spacing:.08em;
+  color: var(--ink); display:flex; align-items:center; gap:8px;
+  opacity:0; transition: all .25s ease; pointer-events:none;
+}
+.ai-thinking.show{ opacity:1; transform:translate(-50%,0); }
+.ai-thinking .spin{
+  width:10px;height:10px;border-radius:50%; border:2px solid rgba(201,162,77,.3); border-top-color: var(--brass);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+.hud-bottom{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:12px 14px; border-radius: var(--radius-md);
+  flex-wrap:wrap;
+}
+.player-card{
+  display:flex; align-items:center; gap:10px; padding:8px 14px; border-radius:12px;
+  background: var(--bg-1); border:1px solid var(--line); min-width:150px;
+  transition: box-shadow .3s ease, border-color .3s ease;
+}
+.player-card.active{
+  border-color: rgba(201,162,77,.6);
+  box-shadow: 0 0 0 1px rgba(201,162,77,.25), 0 0 22px -6px rgba(201,162,77,.5);
+}
+.player-swatch{
+  width:26px;height:26px;border-radius:50%; flex:0 0 26px;
+  box-shadow: inset 0 -3px 6px rgba(0,0,0,.35), 0 0 10px 1px rgba(0,0,0,.2);
+}
+.player-swatch.p1{ background: radial-gradient(circle at 35% 30%, #ff7a6f, var(--crimson) 60%, #a3271e); }
+.player-swatch.p2{ background: radial-gradient(circle at 35% 30%, #82b8f2, var(--azure) 60%, #205a94); }
+.player-meta b{ font-size:.82rem; display:block; }
+.player-meta span{ font-size:.74rem; color:var(--ink-dim); font-family:var(--font-mono); }
+.turn-flag{
+  font-size:.68rem; letter-spacing:.15em; text-transform:uppercase; color:var(--brass);
+  text-align:center; flex:1; min-width:120px;
+}
+.wall-mode-toggle{
+  display:flex; align-items:center; gap:8px; padding:6px; border-radius:12px; background:var(--bg-1); border:1px solid var(--line);
+}
+.wall-mode-toggle button{
+  border:none; background:transparent; color:var(--ink-dim); padding:8px 12px; border-radius:8px; font-size:.76rem;
+  cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px;
+}
+.wall-mode-toggle button.active{ background: var(--brass); color:#241a08; }
+
+/* Victory overlay */
+.victory-overlay{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition: opacity .5s ease; z-index:20;
+  background: radial-gradient(circle at 50% 40%, rgba(0,0,0,0.2), rgba(0,0,0,0.78));
+}
+.victory-overlay.show{ opacity:1; pointer-events:auto; }
+.victory-card{
+  text-align:center; padding:42px 46px; transform: translateY(20px) scale(.92); opacity:0;
+  transition: all .5s cubic-bezier(.2,.8,.2,1);
+}
+.victory-overlay.show .victory-card{ transform:none; opacity:1; }
+.victory-crown{ font-size:2.4rem; margin-bottom:6px; }
+.victory-title{
+  font-family:var(--font-display); font-size:clamp(1.8rem,6vw,2.6rem); letter-spacing:.08em; margin:0 0 6px;
+}
+.victory-title.p1{ color: var(--crimson); text-shadow: 0 0 26px var(--crimson-glow); }
+.victory-title.p2{ color: var(--azure); text-shadow: 0 0 26px var(--azure-glow); }
+.victory-sub{ color:var(--ink-dim); font-size:.85rem; margin-bottom:26px; }
+.victory-actions{ display:flex; gap:10px; justify-content:center; }
+
+/* toast for invalid actions */
+.toast{
+  position:absolute; bottom:14px; left:50%; transform:translateX(-50%) translateY(10px);
+  padding:9px 16px; border-radius:10px; font-size:.78rem; color:#2a0f0c;
+  background: linear-gradient(160deg,#ff9a90,#e2483d); opacity:0; transition: all .25s ease; z-index:15;
+  box-shadow: 0 10px 24px -8px rgba(226,72,61,.6);
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* focus visibility for a11y */
+button:focus-visible, [tabindex]:focus-visible{
+  outline: 2px solid var(--brass-bright); outline-offset:2px;
+}
+
+/* responsive */
+@media (max-width: 720px){
+  .hud-bottom{ flex-direction:column; align-items:stretch; }
+  .turn-flag{ order:-1; }
+  .player-card{ justify-content:center; }
+  .hud-title span.long{ display:none; }
+}
+@media (max-height: 620px){
+  .game-wrap{ gap:6px; padding:8px; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+}
+
+.sr-only{
+  position:absolute; width:1px;height:1px; padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div id="app">
+
+  <!-- SPLASH -->
+  <section id="screen-splash" class="screen active" aria-label="Loading Quorador">
+    <div class="splash-particles" id="splashParticles"></div>
+    <div class="splash-mark">
+      <div class="splash-grid" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <h1 class="splash-title">QUORADOR</h1>
+      <div class="splash-sub">Outwit &middot; Block &middot; Reach</div>
+      <div class="splash-loading"><b></b></div>
+    </div>
+  </section>
+
+  <!-- MAIN MENU -->
+  <section id="screen-menu" class="screen" aria-label="Main Menu">
+    <div class="menu-panel glass">
+      <h1 class="brand-title">QUORADOR</h1>
+      <div class="brand-sub">Outwit &middot; Block &middot; Reach</div>
+      <button class="menu-btn primary" data-action="play-local">Play Local <span class="k">2P</span></button>
+      <button class="menu-btn primary" data-action="play-ai">Play vs AI <span class="k">1P</span></button>
+      <button class="menu-btn" data-action="show-howto">How To Play <span class="k">?</span></button>
+      <button class="menu-btn" data-action="show-settings">Settings <span class="k">&#9881;</span></button>
+      <button class="menu-btn" id="resumeBtn" data-action="resume-game" style="display:none;">Resume Game <span class="k">&#8617;</span></button>
+      <div class="menu-foot">Arrow keys / WASD to move &middot; R to rotate wall &middot; Esc for menu</div>
+    </div>
+  </section>
+
+  <!-- HOW TO PLAY -->
+  <section id="screen-howto" class="screen" aria-label="How to play">
+    <div class="sub-panel glass">
+      <h2>How To Play</h2>
+      <div class="lede">Standard Quoridor rules — reach the far side before your opponent, or wall them into a longer road.</div>
+
+      <div class="howto-row">
+        <div class="howto-ico">&#8593;</div>
+        <div class="howto-text"><b>Move your pawn</b><span>Step one square up, down, left, or right toward the opposite edge of the board.</span></div>
+      </div>
+      <div class="howto-row">
+        <div class="howto-ico">&#9634;</div>
+        <div class="howto-text"><b>Or place a wall</b><span>Each turn, move OR drop a two-cell wall to lengthen your opponent's road. You start with 10 walls.</span></div>
+      </div>
+      <div class="howto-row">
+        <div class="howto-ico">&#9939;</div>
+        <div class="howto-text"><b>Never a total blockade</b><span>A wall may never seal off either player's only path to their goal — the game rejects such placements automatically.</span></div>
+      </div>
+      <div class="howto-row">
+        <div class="howto-ico">&#9737;</div>
+        <div class="howto-text"><b>Jumping</b><span>Land on your opponent's square? Hop straight over them — or diagonally around, if a wall or the board's edge is behind them.</span></div>
+      </div>
+      <div class="howto-row">
+        <div class="howto-ico">&#127942;</div>
+        <div class="howto-text"><b>Win the race</b><span>First pawn to reach any square on the opposite starting row wins the game.</span></div>
+      </div>
+
+      <div class="mini-demo" id="howtoDemo"></div>
+
+      <div class="close-row">
+        <button class="btn-ghost" data-action="back-to-menu">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="screen-settings" class="screen" aria-label="Settings">
+    <div class="sub-panel glass">
+      <h2>Settings</h2>
+      <div class="lede">Preferences are saved automatically to this device.</div>
+
+      <div class="setting-row">
+        <div class="label"><b>Sound</b><span>Procedural effects via Web Audio</span></div>
+        <div class="switch" id="soundSwitch" role="switch" aria-checked="false" tabindex="0"><b></b></div>
+      </div>
+      <div class="setting-row">
+        <div class="label"><b>AI Difficulty</b><span>Applies to new games vs AI</span></div>
+        <div class="seg" id="difficultySeg">
+          <button data-diff="easy">Easy</button>
+          <button data-diff="medium" class="active">Medium</button>
+          <button data-diff="hard">Hard</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="label"><b>Reduce Motion</b><span>Minimize animation intensity</span></div>
+        <div class="switch" id="motionSwitch" role="switch" aria-checked="false" tabindex="0"><b></b></div>
+      </div>
+      <div class="setting-row">
+        <div class="label"><b>Reset Saved Data</b><span>Clears settings and any in-progress game</span></div>
+        <button class="btn-ghost" id="resetDataBtn">Reset</button>
+      </div>
+
+      <div class="close-row">
+        <button class="btn-ghost" data-action="back-to-menu">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen" aria-label="Game board">
+    <div class="game-wrap">
+      <div class="hud-top glass">
+        <div class="hud-title"><span class="dot"></span>QUORADOR <span class="long" id="hudMode" style="color:var(--ink-dim); font-family:var(--font-ui); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; margin-left:6px;"></span></div>
+        <div class="hud-actions">
+          <button class="icon-btn" id="soundToggleBtn" title="Toggle sound" aria-label="Toggle sound">&#128266;</button>
+          <button class="icon-btn" id="restartBtn" title="Restart (R in menu)" aria-label="Restart game">&#8635;</button>
+          <button class="icon-btn" id="menuBtn" title="Menu (Esc)" aria-label="Open menu">&#9776;</button>
+        </div>
+      </div>
+
+      <div class="board-area">
+        <div class="board-frame">
+          <canvas id="boardCanvas" role="img" aria-label="Quorador game board" tabindex="0"></canvas>
+        </div>
+        <div class="ai-thinking" id="aiThinking"><span class="spin"></span> AI thinking&hellip;</div>
+        <div class="toast" id="toast">Invalid move</div>
+
+        <div class="victory-overlay" id="victoryOverlay">
+          <div class="victory-card glass" id="victoryCard">
+            <div class="victory-crown">&#9819;</div>
+            <h2 class="victory-title" id="victoryTitle">PLAYER 1 WINS!</h2>
+            <div class="victory-sub" id="victorySub">Reached the far row in — moves</div>
+            <div class="victory-actions">
+              <button class="btn-solid" id="playAgainBtn">Play Again</button>
+              <button class="btn-ghost" id="victoryMenuBtn">Main Menu</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-bottom glass">
+        <div class="player-card" id="p1Card">
+          <div class="player-swatch p1"></div>
+          <div class="player-meta"><b id="p1Name">Player 1</b><span id="p1Walls">Walls: 10</span></div>
+        </div>
+        <div class="turn-flag" id="turnFlag">Player 1's Turn</div>
+        <div class="wall-mode-toggle" role="group" aria-label="Action mode">
+          <button id="modeMoveBtn" class="active" data-mode="move">&#9679; Move</button>
+          <button id="modeWallBtn" data-mode="wall">&#9634; Wall</button>
+          <button id="rotateWallBtn" title="Rotate wall (R)">&#8635;</button>
+        </div>
+        <div class="player-card" id="p2Card">
+          <div class="player-swatch p2"></div>
+          <div class="player-meta"><b id="p2Name">Player 2</b><span id="p2Walls">Walls: 10</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="sr-only" id="liveRegion" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   QUORADOR — Game Engine
+   Modules: Pathfinder, GameState, AI, AudioManager,
+            StorageManager, Renderer, ParticleSystem,
+            InputManager, UIManager, Game
+   ========================================================= */
+
+const SIZE = 9;
+const WALL_COUNT = 10;
+const DIRS = [[-1,0],[1,0],[0,-1],[0,1]]; // up, down, left, right
+
+function wkey(r,c){ return r + ',' + c; }
+
+function isBlocked(r,c,dr,dc,wallsH,wallsV){
+  if(dr===-1) return wallsH.has(wkey(r-1,c)) || wallsH.has(wkey(r-1,c-1));
+  if(dr===1)  return wallsH.has(wkey(r,c))   || wallsH.has(wkey(r,c-1));
+  if(dc===-1) return wallsV.has(wkey(r,c-1)) || wallsV.has(wkey(r-1,c-1));
+  if(dc===1)  return wallsV.has(wkey(r,c))   || wallsV.has(wkey(r-1,c));
+  return false;
+}
+
+/* ---------------- Pathfinder ---------------- */
+const Pathfinder = {
+  // returns array of [r,c] from start to a goal-row cell (inclusive), or null
+  bfsPath(start, goalRow, wallsH, wallsV){
+    const startKey = wkey(start.row, start.col);
+    const visited = new Set([startKey]);
+    const parent = new Map();
+    const queue = [start.row*SIZE+start.col];
+    let qi = 0;
+    if(start.row === goalRow) return [[start.row,start.col]];
+    while(qi < queue.length){
+      const cur = queue[qi++];
+      const r = (cur / SIZE) | 0, c = cur % SIZE;
+      for(let d=0; d<4; d++){
+        const dr = DIRS[d][0], dc = DIRS[d][1];
+        const nr = r+dr, nc = c+dc;
+        if(nr<0||nr>=SIZE||nc<0||nc>=SIZE) continue;
+        if(isBlocked(r,c,dr,dc,wallsH,wallsV)) continue;
+        const nk = wkey(nr,nc);
+        if(visited.has(nk)) continue;
+        visited.add(nk);
+        parent.set(nr*SIZE+nc, cur);
+        if(nr === goalRow){
+          // reconstruct
+          const path = [[nr,nc]];
+          let p = cur;
+          while(p !== undefined){
+            const pr=(p/SIZE)|0, pc=p%SIZE;
+            path.push([pr,pc]);
+            p = parent.get(p);
+          }
+          path.reverse();
+          return path;
+        }
+        queue.push(nr*SIZE+nc);
+      }
+    }
+    return null;
+  },
+  hasPath(start, goalRow, wallsH, wallsV){
+    return Pathfinder.bfsPath(start, goalRow, wallsH, wallsV) !== null;
+  },
+  pathLength(start, goalRow, wallsH, wallsV){
+    const p = Pathfinder.bfsPath(start, goalRow, wallsH, wallsV);
+    return p ? p.length - 1 : Infinity;
+  }
+};
+
+/* ---------------- GameState ---------------- */
+class GameState{
+  constructor(){ this.reset(); }
+
+  reset(mode, difficulty){
+    this.players = [
+      { row:8, col:4, walls:WALL_COUNT, color:'p1', goalRow:0, name:'Player 1' },
+      { row:0, col:4, walls:WALL_COUNT, color:'p2', goalRow:8, name:'Player 2' }
+    ];
+    this.wallsH = new Set();
+    this.wallsV = new Set();
+    this.turn = 0;
+    this.mode = mode || this.mode || 'local';
+    this.difficulty = difficulty || this.difficulty || 'medium';
+    this.status = 'playing';
+    this.winner = null;
+    this.lastAction = null;
+    this.moveCount = 0;
+    this.wallLog = []; // ordered list for animation replay {orientation,r,c}
+  }
+
+  other(idx){ return idx===0 ? 1 : 0; }
+
+  getValidMoves(idx){
+    const p = this.players[idx];
+    const opp = this.players[this.other(idx)];
+    const moves = [];
+    for(let d=0; d<4; d++){
+      const dr = DIRS[d][0], dc = DIRS[d][1];
+      const nr = p.row+dr, nc = p.col+dc;
+      if(nr<0||nr>=SIZE||nc<0||nc>=SIZE) continue;
+      if(isBlocked(p.row,p.col,dr,dc,this.wallsH,this.wallsV)) continue;
+      if(opp.row===nr && opp.col===nc){
+        const jr = nr+dr, jc = nc+dc;
+        const offBoard = jr<0||jr>=SIZE||jc<0||jc>=SIZE;
+        const straightBlocked = offBoard || isBlocked(nr,nc,dr,dc,this.wallsH,this.wallsV);
+        if(!straightBlocked){
+          moves.push([jr,jc]);
+        } else {
+          const perp = dr!==0 ? [[0,-1],[0,1]] : [[-1,0],[1,0]];
+          for(const [pdr,pdc] of perp){
+            const sr = nr+pdr, sc = nc+pdc;
+            if(sr<0||sr>=SIZE||sc<0||sc>=SIZE) continue;
+            if(isBlocked(nr,nc,pdr,pdc,this.wallsH,this.wallsV)) continue;
+            moves.push([sr,sc]);
+          }
+        }
+      } else {
+        moves.push([nr,nc]);
+      }
+    }
+    return moves;
+  }
+
+  canMoveTo(idx,r,c){
+    const m = this.getValidMoves(idx);
+    for(let i=0;i<m.length;i++) if(m[i][0]===r && m[i][1]===c) return true;
+    return false;
+  }
+
+  movePawn(idx,r,c){
+    if(!this.canMoveTo(idx,r,c)) return false;
+    const p = this.players[idx];
+    this.lastAction = { type:'move', from:[p.row,p.col], to:[r,c] };
+    p.row = r; p.col = c;
+    this.moveCount++;
+    if(p.row === p.goalRow){ this.status = 'won'; this.winner = idx; }
+    return true;
+  }
+
+  wallSlotFree(orientation,r,c){
+    if(r<0||r>7||c<0||c>7) return false;
+    if(orientation==='h'){
+      if(this.wallsH.has(wkey(r,c)) || this.wallsH.has(wkey(r,c-1)) || this.wallsH.has(wkey(r,c+1))) return false;
+      if(this.wallsV.has(wkey(r,c))) return false;
+    } else {
+      if(this.wallsV.has(wkey(r,c)) || this.wallsV.has(wkey(r-1,c)) || this.wallsV.has(wkey(r+1,c))) return false;
+      if(this.wallsH.has(wkey(r,c))) return false;
+    }
+    return true;
+  }
+
+  isWallPlacementValid(idx,orientation,r,c){
+    if(this.status !== 'playing') return false;
+    if(this.players[idx].walls <= 0) return false;
+    if(!this.wallSlotFree(orientation,r,c)) return false;
+    const set = orientation==='h' ? this.wallsH : this.wallsV;
+    const key = wkey(r,c);
+    set.add(key);
+    const p0 = this.players[0], p1 = this.players[1];
+    const ok0 = Pathfinder.hasPath({row:p0.row,col:p0.col}, p0.goalRow, this.wallsH, this.wallsV);
+    const ok1 = ok0 && Pathfinder.hasPath({row:p1.row,col:p1.col}, p1.goalRow, this.wallsH, this.wallsV);
+    set.delete(key);
+    return ok0 && ok1;
+  }
+
+  placeWall(idx,orientation,r,c){
+    if(!this.isWallPlacementValid(idx,orientation,r,c)) return false;
+    const set = orientation==='h' ? this.wallsH : this.wallsV;
+    set.add(wkey(r,c));
+    this.players[idx].walls--;
+    this.lastAction = { type:'wall', orientation, r, c, by:idx };
+    this.wallLog.push({orientation,r,c});
+    this.moveCount++;
+    return true;
+  }
+
+  endTurn(){ this.turn = this.other(this.turn); }
+
+  clone(){
+    const g = Object.create(GameState.prototype);
+    g.players = [ {...this.players[0]}, {...this.players[1]} ];
+    g.wallsH = new Set(this.wallsH);
+    g.wallsV = new Set(this.wallsV);
+    g.turn = this.turn; g.mode = this.mode; g.difficulty = this.difficulty;
+    g.status = this.status; g.winner = this.winner; g.lastAction = null;
+    g.moveCount = this.moveCount; g.wallLog = [];
+    return g;
+  }
+
+  serialize(){
+    return {
+      players: this.players.map(p=>({...p})),
+      wallsH: Array.from(this.wallsH),
+      wallsV: Array.from(this.wallsV),
+      turn: this.turn, mode: this.mode, difficulty: this.difficulty,
+      status: this.status, winner: this.winner, moveCount: this.moveCount
+    };
+  }
+  static deserialize(data){
+    const g = new GameState();
+    g.players = data.players.map(p=>({...p}));
+    g.wallsH = new Set(data.wallsH);
+    g.wallsV = new Set(data.wallsV);
+    g.turn = data.turn; g.mode = data.mode; g.difficulty = data.difficulty;
+    g.status = data.status; g.winner = data.winner; g.moveCount = data.moveCount||0;
+    return g;
+  }
+}
+
+/* ---------------- AI ---------------- */
+const AI = {
+  chooseAction(game, idx){
+    const diff = game.difficulty;
+    if(diff === 'easy') return AI.easyMove(game, idx);
+    if(diff === 'medium') return AI.mediumMove(game, idx);
+    return AI.hardMove(game, idx);
+  },
+
+  shortestPath(game, idx){
+    const p = game.players[idx];
+    return Pathfinder.bfsPath({row:p.row,col:p.col}, p.goalRow, game.wallsH, game.wallsV);
+  },
+  pathLen(game, idx){
+    const path = AI.shortestPath(game, idx);
+    return path ? path.length-1 : Infinity;
+  },
+
+  easyMove(game, idx){
+    const opp = game.other(idx);
+    const moves = game.getValidMoves(idx);
+    if(game.players[idx].walls > 0 && Math.random() < 0.12){
+      const w = AI.randomValidWall(game, idx);
+      if(w) return { type:'wall', orientation:w.orientation, r:w.r, c:w.c };
+    }
+    const path = AI.shortestPath(game, idx);
+    if(path && path.length > 1 && Math.random() < 0.55){
+      const [nr,nc] = path[1];
+      if(moves.some(m=>m[0]===nr&&m[1]===nc)) return { type:'move', row:nr, col:nc };
+    }
+    const m = moves[(Math.random()*moves.length)|0];
+    return { type:'move', row:m[0], col:m[1] };
+  },
+
+  mediumMove(game, idx){
+    const opp = game.other(idx);
+    const myLen = AI.pathLen(game, idx);
+    const oppLen = AI.pathLen(game, opp);
+    if(game.players[idx].walls > 0 && oppLen <= myLen + 2 && Math.random() < 0.55){
+      const w = AI.bestWallAgainst(game, idx, opp, 10);
+      if(w){
+        const clone = game.clone();
+        clone.placeWall(idx, w.orientation, w.r, w.c);
+        if(AI.pathLen(clone, opp) > oppLen) return { type:'wall', orientation:w.orientation, r:w.r, c:w.c };
+      }
+    }
+    const path = AI.shortestPath(game, idx);
+    if(path && path.length > 1) return { type:'move', row:path[1][0], col:path[1][1] };
+    const moves = game.getValidMoves(idx);
+    const m = moves[(Math.random()*moves.length)|0];
+    return { type:'move', row:m[0], col:m[1] };
+  },
+
+  hardMove(game, idx){
+    const opp = game.other(idx);
+    const candidates = [];
+    const moves = game.getValidMoves(idx);
+    for(const [r,c] of moves){
+      const clone = game.clone();
+      clone.movePawn(idx,r,c);
+      const score = clone.status==='won' && clone.winner===idx ? 999 : AI.evaluate(clone, idx, opp);
+      candidates.push({ type:'move', row:r, col:c, score });
+    }
+    if(game.players[idx].walls > 0){
+      const wallCandidates = AI.generateWallCandidates(game, idx, opp, 18);
+      for(const w of wallCandidates){
+        if(!game.isWallPlacementValid(idx, w.orientation, w.r, w.c)) continue;
+        const clone = game.clone();
+        clone.placeWall(idx, w.orientation, w.r, w.c);
+        const score = AI.evaluate(clone, idx, opp) - 0.25;
+        candidates.push({ type:'wall', orientation:w.orientation, r:w.r, c:w.c, score });
+      }
+    }
+    candidates.sort((a,b)=>b.score-a.score);
+    const top = candidates.slice(0, Math.min(6, candidates.length));
+    // shallow second ply: approximate opponent's best reply for the top candidates
+    for(const cand of top){
+      const clone = game.clone();
+      if(cand.type==='move') clone.movePawn(idx, cand.row, cand.col);
+      else clone.placeWall(idx, cand.orientation, cand.r, cand.c);
+      if(clone.status === 'won'){ cand.finalScore = 1000; continue; }
+      const reply = AI.quickBestAction(clone, opp, idx);
+      const clone2 = clone.clone();
+      if(reply){
+        if(reply.type==='move') clone2.movePawn(opp, reply.row, reply.col);
+        else clone2.placeWall(opp, reply.orientation, reply.r, reply.c);
+      }
+      const replyScore = clone2.status==='won' && clone2.winner===opp ? -999 : AI.evaluate(clone2, idx, opp);
+      cand.finalScore = cand.score*0.5 + replyScore*0.5;
+    }
+    top.sort((a,b)=> (b.finalScore ?? b.score) - (a.finalScore ?? a.score) );
+    return top[0] || candidates[0];
+  },
+
+  // cheap greedy action used to approximate an opponent's reply during hard-mode lookahead
+  quickBestAction(game, idx, opp){
+    const myLen = AI.pathLen(game, idx);
+    const oppLen = AI.pathLen(game, opp);
+    if(game.players[idx].walls > 0 && oppLen <= myLen + 1){
+      const w = AI.bestWallAgainst(game, idx, opp, 8);
+      if(w) return { type:'wall', orientation:w.orientation, r:w.r, c:w.c };
+    }
+    const path = AI.shortestPath(game, idx);
+    if(path && path.length > 1) return { type:'move', row:path[1][0], col:path[1][1] };
+    const moves = game.getValidMoves(idx);
+    if(!moves.length) return null;
+    return { type:'move', row:moves[0][0], col:moves[0][1] };
+  },
+
+  evaluate(game, idx, opp){
+    const myLen = AI.pathLen(game, idx);
+    const oppLen = AI.pathLen(game, opp);
+    const wallDiff = game.players[idx].walls - game.players[opp].walls;
+    return (oppLen - myLen) + wallDiff * 0.4;
+  },
+
+  generateWallCandidates(game, idx, opp, limit){
+    const path = AI.shortestPath(game, opp);
+    const out = [];
+    const seen = new Set();
+    const add = (o,r,c)=>{
+      if(r<0||r>7||c<0||c>7) return;
+      const k = o+r+','+c;
+      if(seen.has(k)) return;
+      seen.add(k); out.push({orientation:o,r,c});
+    };
+    if(path){
+      for(let i=0; i<path.length-1 && out.length<limit; i++){
+        const [r,c] = path[i];
+        add('h',r,c); add('h',r,c-1); add('h',r-1,c); add('h',r-1,c-1);
+        add('v',r,c); add('v',r,c-1); add('v',r-1,c); add('v',r-1,c-1);
+      }
+    }
+    let guard = 0;
+    while(out.length < limit && guard < limit*6){
+      guard++;
+      const o = Math.random()<0.5 ? 'h':'v';
+      const r = (Math.random()*8)|0, c=(Math.random()*8)|0;
+      add(o,r,c);
+    }
+    return out.slice(0, limit);
+  },
+
+  bestWallAgainst(game, idx, opp, limit){
+    const cands = AI.generateWallCandidates(game, idx, opp, limit);
+    let best = null, bestScore = -Infinity;
+    for(const w of cands){
+      if(!game.isWallPlacementValid(idx, w.orientation, w.r, w.c)) continue;
+      const clone = game.clone();
+      clone.placeWall(idx, w.orientation, w.r, w.c);
+      const score = AI.evaluate(clone, idx, opp);
+      if(score > bestScore){ bestScore = score; best = w; }
+    }
+    return best;
+  },
+
+  randomValidWall(game, idx){
+    for(let t=0;t<24;t++){
+      const o = Math.random()<0.5 ? 'h':'v';
+      const r = (Math.random()*8)|0, c=(Math.random()*8)|0;
+      if(game.isWallPlacementValid(idx,o,r,c)) return {orientation:o,r,c};
+    }
+    return null;
+  }
+};
+
+/* ---------------- StorageManager ---------------- */
+const StorageManager = {
+  KEY_SETTINGS: 'quorador_settings_v1',
+  KEY_SAVE: 'quorador_save_v1',
+  defaultSettings(){ return { sound:false, difficulty:'medium', reduceMotion:false }; },
+  getSettings(){
+    try{
+      const raw = localStorage.getItem(this.KEY_SETTINGS);
+      if(!raw) return this.defaultSettings();
+      return Object.assign(this.defaultSettings(), JSON.parse(raw));
+    }catch(e){ return this.defaultSettings(); }
+  },
+  saveSettings(s){
+    try{ localStorage.setItem(this.KEY_SETTINGS, JSON.stringify(s)); }catch(e){ /* ignore */ }
+  },
+  saveGame(state){
+    try{ localStorage.setItem(this.KEY_SAVE, JSON.stringify(state.serialize())); }catch(e){}
+  },
+  loadGame(){
+    try{
+      const raw = localStorage.getItem(this.KEY_SAVE);
+      if(!raw) return null;
+      return GameState.deserialize(JSON.parse(raw));
+    }catch(e){ return null; }
+  },
+  clearGame(){ try{ localStorage.removeItem(this.KEY_SAVE); }catch(e){} },
+  resetAll(){ try{ localStorage.removeItem(this.KEY_SETTINGS); localStorage.removeItem(this.KEY_SAVE); }catch(e){} }
+};
+
+/* ---------------- AudioManager ---------------- */
+class AudioManager{
+  constructor(){ this.ctx = null; this.enabled = false; }
+  setEnabled(v){ this.enabled = v; if(v) this.ensureCtx(); }
+  ensureCtx(){
+    if(!this.ctx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) this.ctx = new AC();
+    }
+    if(this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    return this.ctx;
+  }
+  tone(freq, dur, type, gainPeak, delay){
+    if(!this.enabled) return;
+    const ctx = this.ensureCtx();
+    if(!ctx) return;
+    const t0 = ctx.currentTime + (delay||0);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(gainPeak||0.08, t0+0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+dur+0.02);
+  }
+  move(){ this.tone(392, 0.09, 'sine', 0.07); this.tone(494, 0.08, 'sine', 0.04, 0.03); }
+  wall(){ this.tone(160, 0.14, 'triangle', 0.09); this.tone(120, 0.16, 'square', 0.03, 0.02); }
+  invalid(){ this.tone(140, 0.18, 'sawtooth', 0.07); }
+  click(){ this.tone(660, 0.05, 'sine', 0.05); }
+  victory(){
+    [523.25,659.25,783.99,1046.5].forEach((f,i)=> this.tone(f, 0.5, 'triangle', 0.09, i*0.11));
+  }
+  thinking(){ this.tone(300, 0.05, 'sine', 0.02); }
+}
+
+/* ---------------- ParticleSystem ---------------- */
+class ParticleSystem{
+  constructor(){ this.particles = []; }
+  burst(x,y,color,count){
+    count = count || 60;
+    for(let i=0;i<count;i++){
+      const ang = Math.random()*Math.PI*2;
+      const spd = 1.2 + Math.random()*4.4;
+      this.particles.push({
+        x, y, vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd - 1.4,
+        life: 1, decay: 0.008 + Math.random()*0.012,
+        size: 2 + Math.random()*3.4, color, g: 0.06 + Math.random()*0.03
+      });
+    }
+  }
+  update(){
+    const arr = this.particles;
+    for(let i=arr.length-1;i>=0;i--){
+      const p = arr[i];
+      p.x += p.vx; p.y += p.vy; p.vy += p.g; p.vx *= 0.992;
+      p.life -= p.decay;
+      if(p.life <= 0) arr.splice(i,1);
+    }
+  }
+  draw(ctx){
+    for(const p of this.particles){
+      ctx.globalAlpha = Math.max(p.life,0);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  clear(){ this.particles.length = 0; }
+  get active(){ return this.particles.length > 0; }
+}
+
+/* ---------------- Renderer ---------------- */
+class Renderer{
+  constructor(canvas){
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.dpr = Math.min(window.devicePixelRatio||1, 2.5);
+    this.layout = { margin:0, cell:0, gap:0, size:0 };
+    this.visual = {
+      p1: {r:8,c:4,x:0,y:0,bounce:0},
+      p2: {r:0,c:4,x:0,y:0,bounce:0}
+    };
+    this.wallAnims = []; // {orientation,r,c,t, key}
+    this.knownWallKeys = new Set();
+    this.hover = null; // {type:'cell'|'wall', r,c, orientation}
+    this.reduceMotion = false;
+    this.particles = new ParticleSystem();
+    this.glowT = 0;
+  }
+
+  resize(){
+    const rect = this.canvas.getBoundingClientRect();
+    const size = Math.max(1, Math.min(rect.width, rect.height));
+    this.canvas.width = Math.round(size * this.dpr);
+    this.canvas.height = Math.round(size * this.dpr);
+    this.layout.size = size;
+    const margin = size * 0.018;
+    const usable = size - margin*2;
+    const GAP_RATIO = 0.16;
+    const cell = usable / (SIZE + (SIZE-1)*GAP_RATIO);
+    const gap = cell * GAP_RATIO;
+    this.layout.margin = margin; this.layout.cell = cell; this.layout.gap = gap;
+  }
+
+  cellX(c){ return this.layout.margin + c*(this.layout.cell+this.layout.gap); }
+  cellY(r){ return this.layout.margin + r*(this.layout.cell+this.layout.gap); }
+  centerCoord(i){ return this.layout.margin + this.layout.cell + this.layout.gap/2 + i*(this.layout.cell+this.layout.gap); }
+
+  screenToCell(x,y){
+    const L = this.layout;
+    const c = Math.floor((x - L.margin) / (L.cell+L.gap));
+    const r = Math.floor((y - L.margin) / (L.cell+L.gap));
+    if(r<0||r>=SIZE||c<0||c>=SIZE) return null;
+    // ensure within actual cell bounds (not in gap)
+    const cx = this.cellX(c), cy = this.cellY(r);
+    if(x < cx-L.gap*0.5 || x > cx+L.cell+L.gap*0.5 || y < cy-L.gap*0.5 || y > cy+L.cell+L.gap*0.5) { /* still ok, approx */ }
+    return {r,c};
+  }
+
+  screenToWallSlot(x,y){
+    const L = this.layout;
+    const inv = (v)=> Math.round((v - (L.margin+L.cell+L.gap/2)) / (L.cell+L.gap));
+    let r = inv(y), c = inv(x);
+    r = Math.max(0, Math.min(7,r));
+    c = Math.max(0, Math.min(7,c));
+    return {r,c};
+  }
+
+  syncTarget(playerKey, r, c, instant){
+    const v = this.visual[playerKey];
+    if(instant){ v.r=r; v.c=c; }
+    v.tr = r; v.tc = c;
+    if(instant){ v._x=undefined; }
+  }
+
+  initVisual(game){
+    this.visual.p1.r = this.visual.p1.tr = game.players[0].row;
+    this.visual.p1.c = this.visual.p1.tc = game.players[0].col;
+    this.visual.p2.r = this.visual.p2.tr = game.players[1].row;
+    this.visual.p2.c = this.visual.p2.tc = game.players[1].col;
+    this.wallAnims = [];
+    this.knownWallKeys = new Set();
+  }
+
+  syncWalls(game){
+    const all = [];
+    game.wallsH.forEach(k=> all.push('h'+k));
+    game.wallsV.forEach(k=> all.push('v'+k));
+    for(const key of all){
+      if(!this.knownWallKeys.has(key)){
+        this.knownWallKeys.add(key);
+        const orientation = key[0];
+        const [r,c] = key.slice(1).split(',').map(Number);
+        this.wallAnims.push({orientation, r, c, t0: performance.now()});
+      }
+    }
+  }
+
+  animating(){
+    const p1 = this.visual.p1, p2 = this.visual.p2;
+    const moving = (Math.abs((p1.r)-(p1.tr))>0.002)||(Math.abs((p1.c)-(p1.tc))>0.002)||
+                   (Math.abs((p2.r)-(p2.tr))>0.002)||(Math.abs((p2.c)-(p2.tc))>0.002);
+    const wallsAnimating = this.wallAnims.some(w => performance.now()-w.t0 < 260);
+    return moving || wallsAnimating || this.particles.active;
+  }
+
+  step(dt){
+    const speed = this.reduceMotion ? 0.35 : 0.16; // lerp factor
+    for(const key of ['p1','p2']){
+      const v = this.visual[key];
+      const dr = v.tr - v.r, dc = v.tc - v.c;
+      if(Math.abs(dr) > 0.001 || Math.abs(dc) > 0.001){
+        v.r += dr * Math.min(1, speed * (dt/16.67));
+        v.c += dc * Math.min(1, speed * (dt/16.67));
+        if(Math.abs(v.tr-v.r) < 0.01) v.r = v.tr;
+        if(Math.abs(v.tc-v.c) < 0.01) v.c = v.tc;
+      }
+    }
+    this.particles.update();
+    this.glowT += dt;
+  }
+
+  draw(game, opts){
+    opts = opts || {};
+    const ctx = this.ctx, L = this.layout;
+    ctx.save();
+    ctx.scale(this.dpr, this.dpr);
+    ctx.clearRect(0,0,L.size,L.size);
+
+    // board base
+    const grad = ctx.createLinearGradient(0,0,L.size,L.size);
+    grad.addColorStop(0,'#2b2015'); grad.addColorStop(0.5,'#1d160e'); grad.addColorStop(1,'#140f09');
+    ctx.fillStyle = grad;
+    this.roundRect(ctx,0,0,L.size,L.size, L.size*0.02);
+    ctx.fill();
+
+    // cells
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        const x = this.cellX(c), y = this.cellY(r);
+        let base1, base2;
+        if((r+c)%2===0){ base1='#3a3226'; base2='#302a20'; }
+        else { base1='#332c22'; base2='#2a251c'; }
+        const cg = ctx.createLinearGradient(x,y,x+L.cell,y+L.cell);
+        cg.addColorStop(0, base1); cg.addColorStop(1, base2);
+        ctx.fillStyle = cg;
+        this.roundRect(ctx,x,y,L.cell,L.cell, L.cell*0.14);
+        ctx.fill();
+
+        // goal row tint
+        if(r===0){ ctx.fillStyle='rgba(61,143,226,0.06)'; this.roundRect(ctx,x,y,L.cell,L.cell,L.cell*0.14); ctx.fill(); }
+        if(r===8){ ctx.fillStyle='rgba(226,72,61,0.06)'; this.roundRect(ctx,x,y,L.cell,L.cell,L.cell*0.14); ctx.fill(); }
+      }
+    }
+
+    // valid move highlights
+    if(opts.validMoves){
+      const t = (Math.sin(this.glowT/260)+1)/2;
+      for(const [r,c] of opts.validMoves){
+        const x = this.cellX(c), y = this.cellY(r);
+        ctx.save();
+        ctx.fillStyle = `rgba(201,162,77,${0.16+t*0.12})`;
+        this.roundRect(ctx,x,y,L.cell,L.cell,L.cell*0.14);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x+L.cell/2, y+L.cell/2, L.cell*0.09, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(232,195,119,${0.55+t*0.3})`;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // hover cell (move mode)
+    if(opts.hoverCell){
+      const {r,c} = opts.hoverCell;
+      const x = this.cellX(c), y = this.cellY(r);
+      ctx.strokeStyle = 'rgba(233,230,222,0.35)';
+      ctx.lineWidth = Math.max(1,L.cell*0.02);
+      this.roundRect(ctx,x+1,y+1,L.cell-2,L.cell-2,L.cell*0.13);
+      ctx.stroke();
+    }
+
+    // placed walls
+    for(const key of game.wallsH){
+      const [r,c] = key.split(',').map(Number);
+      this.drawWall(ctx,'h',r,c,1,1);
+    }
+    for(const key of game.wallsV){
+      const [r,c] = key.split(',').map(Number);
+      this.drawWall(ctx,'v',r,c,1,1);
+    }
+    // wall pop animations (overlay glow while young)
+    const now = performance.now();
+    for(const w of this.wallAnims){
+      const age = now - w.t0;
+      if(age < 260){
+        const t = age/260;
+        const scale = 0.75 + 0.25*this.easeOutBack(t);
+        const alpha = 1;
+        this.drawWall(ctx, w.orientation, w.r, w.c, scale, alpha, true, t);
+      }
+    }
+
+    // wall preview
+    if(opts.wallPreview){
+      const {orientation,r,c,valid} = opts.wallPreview;
+      ctx.save();
+      ctx.globalAlpha = 0.55 + (Math.sin(this.glowT/220)+1)/2*0.15;
+      this.drawWall(ctx, orientation, r, c, 1, 1, false, 1, valid ? null : 'invalid');
+      ctx.restore();
+    }
+
+    // pawns
+    this.drawPawn(ctx, this.visual.p1, '#e2483d', '#ff9a90', game.turn===0 && game.status==='playing');
+    this.drawPawn(ctx, this.visual.p2, '#3d8fe2', '#8fc4f7', game.turn===1 && game.status==='playing');
+
+    // particles
+    this.particles.draw(ctx);
+
+    ctx.restore();
+  }
+
+  easeOutBack(t){
+    const c1=1.70158, c3=c1+1;
+    return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2);
+  }
+
+  roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  drawWall(ctx, orientation, r, c, scale, alpha, isPop, popT, invalidFlag){
+    const L = this.layout;
+    let x,y,w,h;
+    if(orientation==='h'){
+      x = this.cellX(c); w = L.cell*2+L.gap; h = L.gap;
+      y = this.cellY(r)+L.cell;
+    } else {
+      y = this.cellY(r); h = L.cell*2+L.gap; w = L.gap;
+      x = this.cellX(c)+L.cell;
+    }
+    const cx = x+w/2, cy = y+h/2;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(cx,cy);
+    ctx.scale(scale,scale);
+    ctx.translate(-cx,-cy);
+    let colorTop, colorBot, glow;
+    if(invalidFlag){ colorTop='#ff8a80'; colorBot='#b0201a'; glow='rgba(226,72,61,0.65)'; }
+    else { colorTop='#e8c377'; colorBot='#8a6a2c'; glow='rgba(201,162,77,0.55)'; }
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = isPop ? 14*(1-Math.min(1,popT||0)) + 4 : 4;
+    const g = ctx.createLinearGradient(x,y,x,y+h);
+    g.addColorStop(0, colorTop); g.addColorStop(1, colorBot);
+    ctx.fillStyle = g;
+    this.roundRect(ctx, x, y, w, h, Math.min(w,h)*0.35);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  drawPawn(ctx, v, color, colorLight, activeTurn){
+    const L = this.layout;
+    const cx = this.cellX(v.c) + L.cell/2 + (v.c - Math.round(v.c))*0; // already float, use directly
+    const x = this.cellX(0) + v.c*(L.cell+L.gap) + L.cell/2;
+    const y = this.cellY(0) + v.r*(L.cell+L.gap) + L.cell/2;
+    const rad = L.cell*0.34;
+
+    if(activeTurn){
+      const pulse = (Math.sin(this.glowT/300)+1)/2;
+      ctx.save();
+      ctx.globalAlpha = 0.22+pulse*0.18;
+      ctx.beginPath();
+      ctx.arc(x,y, rad*1.55, 0, Math.PI*2);
+      ctx.fillStyle = color;
+      ctx.filter = 'blur(2px)';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // shadow
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(x, y+rad*0.72, rad*0.85, rad*0.28, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fill();
+    ctx.restore();
+
+    // body
+    const grad = ctx.createRadialGradient(x-rad*0.35,y-rad*0.4,rad*0.1, x,y,rad*1.05);
+    grad.addColorStop(0, colorLight);
+    grad.addColorStop(0.55, color);
+    grad.addColorStop(1, this.shade(color,-0.35));
+    ctx.beginPath();
+    ctx.arc(x,y,rad,0,Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.shadowColor = color; ctx.shadowBlur = activeTurn ? 18 : 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // rim
+    ctx.beginPath();
+    ctx.arc(x,y,rad,0,Math.PI*2);
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = Math.max(1,rad*0.06);
+    ctx.stroke();
+    // highlight
+    ctx.beginPath();
+    ctx.arc(x-rad*0.32,y-rad*0.38,rad*0.32,0,Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fill();
+  }
+
+  shade(hex, amt){
+    const c = hex.replace('#','');
+    const num = parseInt(c,16);
+    let r = (num>>16)+Math.round(255*amt);
+    let g = ((num>>8)&0xff)+Math.round(255*amt);
+    let b = (num&0xff)+Math.round(255*amt);
+    r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+/* ---------------- Game (orchestrator) ---------------- */
+class Game{
+  constructor(){
+    this.state = new GameState();
+    this.audio = new AudioManager();
+    this.settings = StorageManager.getSettings();
+    this.audio.setEnabled(this.settings.sound);
+    this.canvas = document.getElementById('boardCanvas');
+    this.renderer = new Renderer(this.canvas);
+    this.renderer.reduceMotion = this.settings.reduceMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.actionMode = 'move'; // 'move' | 'wall'
+    this.wallOrientation = 'h';
+    this.hoverCellPos = null;
+    this.hoverWallPos = null;
+    this.aiBusy = false;
+    this._raf = null;
+    this._lastT = performance.now();
+    this.el = {
+      screens: {
+        splash: document.getElementById('screen-splash'),
+        menu: document.getElementById('screen-menu'),
+        howto: document.getElementById('screen-howto'),
+        settings: document.getElementById('screen-settings'),
+        game: document.getElementById('screen-game')
+      },
+      p1Walls: document.getElementById('p1Walls'),
+      p2Walls: document.getElementById('p2Walls'),
+      p1Name: document.getElementById('p1Name'),
+      p2Name: document.getElementById('p2Name'),
+      p1Card: document.getElementById('p1Card'),
+      p2Card: document.getElementById('p2Card'),
+      turnFlag: document.getElementById('turnFlag'),
+      hudMode: document.getElementById('hudMode'),
+      aiThinking: document.getElementById('aiThinking'),
+      toast: document.getElementById('toast'),
+      victoryOverlay: document.getElementById('victoryOverlay'),
+      victoryTitle: document.getElementById('victoryTitle'),
+      victorySub: document.getElementById('victorySub'),
+      resumeBtn: document.getElementById('resumeBtn'),
+      liveRegion: document.getElementById('liveRegion'),
+      modeMoveBtn: document.getElementById('modeMoveBtn'),
+      modeWallBtn: document.getElementById('modeWallBtn'),
+    };
+    this.bindUI();
+    this.bindBoardInput();
+    this.applySettingsToUI();
+    this.initSplashParticles();
+    this.checkResumeAvailable();
+    this.startSplashSequence();
+    this.loop = this.loop.bind(this);
+    requestAnimationFrame(this.loop);
+    window.addEventListener('resize', ()=> this.renderer.resize());
+    new ResizeObserver(()=> this.renderer.resize()).observe(this.canvas);
+  }
+
+  /* ---------- screen management ---------- */
+  showScreen(name){
+    Object.values(this.el.screens).forEach(s=> s.classList.remove('active'));
+    this.el.screens[name].classList.add('active');
+    this.currentScreen = name;
+  }
+
+  initSplashParticles(){
+    const host = document.getElementById('splashParticles');
+    const n = 26;
+    for(let i=0;i<n;i++){
+      const s = document.createElement('span');
+      s.style.left = (Math.random()*100)+'%';
+      s.style.top = (60+Math.random()*35)+'%';
+      s.style.animationDelay = (Math.random()*7)+'s';
+      s.style.animationDuration = (5+Math.random()*5)+'s';
+      host.appendChild(s);
+    }
+  }
+
+  startSplashSequence(){
+    setTimeout(()=>{
+      this.showScreen('menu');
+    }, 1700);
+  }
+
+  checkResumeAvailable(){
+    const saved = StorageManager.loadGame();
+    if(saved && saved.status === 'playing'){
+      this.el.resumeBtn.style.display = '';
+      this._pendingResume = saved;
+    }
+  }
+
+  /* ---------- settings ---------- */
+  applySettingsToUI(){
+    const soundSwitch = document.getElementById('soundSwitch');
+    const motionSwitch = document.getElementById('motionSwitch');
+    soundSwitch.classList.toggle('on', !!this.settings.sound);
+    soundSwitch.setAttribute('aria-checked', String(!!this.settings.sound));
+    motionSwitch.classList.toggle('on', !!this.settings.reduceMotion);
+    motionSwitch.setAttribute('aria-checked', String(!!this.settings.reduceMotion));
+    document.querySelectorAll('#difficultySeg button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.diff === this.settings.difficulty);
+    });
+  }
+
+  saveSettings(){ StorageManager.saveSettings(this.settings); }
+
+  toggleSound(){
+    this.settings.sound = !this.settings.sound;
+    this.audio.setEnabled(this.settings.sound);
+    this.saveSettings();
+    this.applySettingsToUI();
+    if(this.settings.sound) this.audio.click();
+  }
+
+  /* ---------- new game / resume ---------- */
+  newGame(mode){
+    this.state.reset(mode, this.settings.difficulty);
+    this.renderer.initVisual(this.state);
+    this.actionMode = 'move';
+    this.wallOrientation = 'h';
+    this.el.victoryOverlay.classList.remove('show');
+    this.renderer.particles.clear();
+    this.updateHUD();
+    this.el.hudMode.textContent = mode === 'ai' ? ('VS AI \u2014 ' + this.settings.difficulty.toUpperCase()) : '2 PLAYER LOCAL';
+    this.showScreen('game');
+    this.canvas.focus({preventScroll:true});
+    this.persist();
+    this.maybeTriggerAI();
+  }
+
+  resumeGame(){
+    if(!this._pendingResume) return;
+    this.state = this._pendingResume;
+    this.renderer.initVisual(this.state);
+    this.el.hudMode.textContent = this.state.mode === 'ai' ? ('VS AI \u2014 ' + this.state.difficulty.toUpperCase()) : '2 PLAYER LOCAL';
+    this.updateHUD();
+    this.showScreen('game');
+    this.canvas.focus({preventScroll:true});
+    this.maybeTriggerAI();
+  }
+
+  persist(){
+    if(this.state.status === 'playing') StorageManager.saveGame(this.state);
+    else StorageManager.clearGame();
+  }
+
+  restart(){
+    this.newGame(this.state.mode);
+  }
+
+  /* ---------- HUD ---------- */
+  updateHUD(){
+    const s = this.state;
+    this.el.p1Walls.textContent = 'Walls: ' + s.players[0].walls;
+    this.el.p2Walls.textContent = 'Walls: ' + s.players[1].walls;
+    this.el.p1Name.textContent = s.players[0].name;
+    this.el.p2Name.textContent = s.mode==='ai' ? 'AI Opponent' : s.players[1].name;
+    this.el.p1Card.classList.toggle('active', s.turn===0 && s.status==='playing');
+    this.el.p2Card.classList.toggle('active', s.turn===1 && s.status==='playing');
+    this.el.turnFlag.textContent = s.status==='playing'
+      ? ((s.turn===0 ? (s.players[0].name) : (s.mode==='ai'?'AI':s.players[1].name)) + "'s Turn")
+      : 'Game Over';
+    this.el.liveRegion.textContent = this.el.turnFlag.textContent;
+  }
+
+  toast(msg){
+    const t = this.el.toast;
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(()=> t.classList.remove('show'), 1400);
+  }
+
+  /* ---------- input binding ---------- */
+  bindUI(){
+    document.body.addEventListener('click', (e)=>{
+      const btn = e.target.closest('[data-action]');
+      if(btn){
+        this.audio.click();
+        const a = btn.dataset.action;
+        if(a==='play-local') this.newGame('local');
+        else if(a==='play-ai') this.newGame('ai');
+        else if(a==='show-howto') this.showScreen('howto');
+        else if(a==='show-settings') this.showScreen('settings');
+        else if(a==='back-to-menu') this.showScreen('menu');
+        else if(a==='resume-game') this.resumeGame();
+      }
+    });
+
+    document.getElementById('soundSwitch').addEventListener('click', ()=> this.toggleSound());
+    document.getElementById('soundSwitch').addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); this.toggleSound(); } });
+    document.getElementById('soundToggleBtn').addEventListener('click', ()=> this.toggleSound());
+
+    const motionSwitch = document.getElementById('motionSwitch');
+    motionSwitch.addEventListener('click', ()=>{
+      this.settings.reduceMotion = !this.settings.reduceMotion;
+      this.renderer.reduceMotion = this.settings.reduceMotion;
+      this.saveSettings(); this.applySettingsToUI();
+    });
+
+    document.querySelectorAll('#difficultySeg button').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        this.settings.difficulty = b.dataset.diff;
+        this.saveSettings(); this.applySettingsToUI();
+      });
+    });
+
+    document.getElementById('resetDataBtn').addEventListener('click', ()=>{
+      StorageManager.resetAll();
+      this.settings = StorageManager.getSettings();
+      this.applySettingsToUI();
+      this.el.resumeBtn.style.display = 'none';
+      this._pendingResume = null;
+      this.toast('Saved data cleared');
+    });
+
+    document.getElementById('restartBtn').addEventListener('click', ()=> this.restart());
+    document.getElementById('menuBtn').addEventListener('click', ()=> this.showScreen('menu'));
+    document.getElementById('playAgainBtn').addEventListener('click', ()=> this.restart());
+    document.getElementById('victoryMenuBtn').addEventListener('click', ()=> this.showScreen('menu'));
+
+    document.getElementById('modeMoveBtn').addEventListener('click', ()=> this.setActionMode('move'));
+    document.getElementById('modeWallBtn').addEventListener('click', ()=> this.setActionMode('wall'));
+    document.getElementById('rotateWallBtn').addEventListener('click', ()=> this.rotateWall());
+
+    document.addEventListener('keydown', (e)=> this.handleKey(e));
+
+    this.drawHowtoDemo();
+  }
+
+  setActionMode(mode){
+    this.actionMode = mode;
+    document.getElementById('modeMoveBtn').classList.toggle('active', mode==='move');
+    document.getElementById('modeWallBtn').classList.toggle('active', mode==='wall');
+  }
+
+  rotateWall(){
+    this.wallOrientation = this.wallOrientation==='h' ? 'v' : 'h';
+    this.audio.click();
+  }
+
+  handleKey(e){
+    if(this.currentScreen !== 'game'){
+      if(e.key === 'Enter' && this.currentScreen==='menu'){ /* noop */ }
+      return;
+    }
+    if(e.key === 'Escape'){ this.showScreen('menu'); return; }
+    if(e.key.toLowerCase()==='r' && this.actionMode==='wall'){ this.rotateWall(); return; }
+    if(this.state.status !== 'playing') return;
+    if(this.isAITurn()) return;
+
+    const map = {
+      arrowup:[-1,0], w:[-1,0],
+      arrowdown:[1,0], s:[1,0],
+      arrowleft:[0,-1], a:[0,-1],
+      arrowright:[0,1], d:[0,1]
+    };
+    const k = e.key.toLowerCase();
+    if(map[k]){
+      e.preventDefault();
+      const [dr,dc] = map[k];
+      const idx = this.state.turn;
+      const p = this.state.players[idx];
+      const target = [p.row+dr, p.col+dc];
+      const moves = this.state.getValidMoves(idx);
+      // prefer exact adjacent target; else forward jump in same direction if opponent present
+      let chosen = moves.find(m=>m[0]===target[0]&&m[1]===target[1]);
+      if(!chosen){
+        const opp = this.state.players[this.state.other(idx)];
+        if(opp.row===target[0] && opp.col===target[1]){
+          const jump = [opp.row+dr, opp.col+dc];
+          chosen = moves.find(m=>m[0]===jump[0]&&m[1]===jump[1]);
+        }
+      }
+      if(chosen) this.applyMove(idx, chosen[0], chosen[1]);
+      else { this.toast('Can\u2019t move that way'); this.audio.invalid(); }
+    }
+  }
+
+  bindBoardInput(){
+    const c = this.canvas;
+    const getPos = (e)=>{
+      const rect = c.getBoundingClientRect();
+      const evt = e.touches ? e.touches[0] : e;
+      const scaleX = this.renderer.layout.size / rect.width;
+      const scaleY = this.renderer.layout.size / rect.height;
+      return { x:(evt.clientX-rect.left)*scaleX, y:(evt.clientY-rect.top)*scaleY };
+    };
+
+    c.addEventListener('mousemove', (e)=>{ const p = getPos(e); this.updateHover(p.x,p.y); });
+    c.addEventListener('mouseleave', ()=>{ this.hoverCellPos=null; this.hoverWallPos=null; });
+    c.addEventListener('click', (e)=>{ const p = getPos(e); this.handleBoardClick(p.x,p.y); });
+    c.addEventListener('contextmenu', (e)=>{ e.preventDefault(); if(this.actionMode==='wall') this.rotateWall(); });
+
+    c.addEventListener('touchstart', (e)=>{
+      e.preventDefault();
+      const p = getPos(e);
+      this.updateHover(p.x,p.y);
+      this._touchPending = p;
+    }, {passive:false});
+    c.addEventListener('touchend', (e)=>{
+      e.preventDefault();
+      if(this._touchPending) this.handleBoardClick(this._touchPending.x, this._touchPending.y);
+      this._touchPending = null;
+    }, {passive:false});
+  }
+
+  updateHover(x,y){
+    if(this.state.status !== 'playing' || this.isAITurn()){ this.hoverCellPos=null; this.hoverWallPos=null; return; }
+    if(this.actionMode === 'move'){
+      this.hoverCellPos = this.renderer.screenToCell(x,y);
+      this.hoverWallPos = null;
+    } else {
+      this.hoverWallPos = this.renderer.screenToWallSlot(x,y);
+      this.hoverCellPos = null;
+    }
+  }
+
+  handleBoardClick(x,y){
+    if(this.state.status !== 'playing' || this.isAITurn()) return;
+    const idx = this.state.turn;
+    if(this.actionMode === 'move'){
+      const cell = this.renderer.screenToCell(x,y);
+      if(!cell) return;
+      if(this.state.canMoveTo(idx, cell.r, cell.c)){
+        this.applyMove(idx, cell.r, cell.c);
+      } else {
+        this.toast('Invalid move');
+        this.audio.invalid();
+        this.flashInvalidCell(cell);
+      }
+    } else {
+      const slot = this.renderer.screenToWallSlot(x,y);
+      if(this.state.isWallPlacementValid(idx, this.wallOrientation, slot.r, slot.c)){
+        this.applyWall(idx, this.wallOrientation, slot.r, slot.c);
+      } else {
+        this.toast('Wall blocked or invalid');
+        this.audio.invalid();
+        this.flashInvalidWall(slot);
+      }
+    }
+  }
+
+  flashInvalidCell(cell){ this._invalidFlashCell = {...cell, t0:performance.now()}; }
+  flashInvalidWall(slot){ this._invalidFlashWall = {...slot, orientation:this.wallOrientation, t0:performance.now()}; }
+
+  applyMove(idx,r,c){
+    this.state.movePawn(idx,r,c);
+    this.renderer.syncTarget(idx===0?'p1':'p2', r, c);
+    this.audio.move();
+    this.afterAction();
+  }
+
+  applyWall(idx,orientation,r,c){
+    this.state.placeWall(idx,orientation,r,c);
+    this.renderer.syncWalls(this.state);
+    this.audio.wall();
+    this.afterAction();
+  }
+
+  afterAction(){
+    this.updateHUD();
+    if(this.state.status === 'won'){
+      this.persist();
+      setTimeout(()=> this.showVictory(), 420);
+      return;
+    }
+    this.state.endTurn();
+    this.updateHUD();
+    this.persist();
+    this.maybeTriggerAI();
+  }
+
+  isAITurn(){ return this.state.mode==='ai' && this.state.turn===1; }
+
+  maybeTriggerAI(){
+    if(!this.isAITurn() || this.state.status!=='playing') return;
+    this.aiBusy = true;
+    this.el.aiThinking.classList.add('show');
+    const delay = 420 + Math.random()*380;
+    setTimeout(()=>{
+      if(this.state.status !== 'playing'){ this.aiBusy=false; this.el.aiThinking.classList.remove('show'); return; }
+      const action = AI.chooseAction(this.state, 1);
+      this.el.aiThinking.classList.remove('show');
+      this.aiBusy = false;
+      if(!action){ this.state.endTurn(); this.updateHUD(); return; }
+      if(action.type === 'move') this.applyMove(1, action.row, action.col);
+      else this.applyWall(1, action.orientation, action.r, action.c);
+    }, delay);
+  }
+
+  showVictory(){
+    const s = this.state;
+    const winnerIdx = s.winner;
+    const title = this.el.victoryTitle;
+    title.textContent = (winnerIdx===0 ? s.players[0].name : (s.mode==='ai' ? 'AI Opponent' : s.players[1].name)).toUpperCase() + ' WINS!';
+    title.className = 'victory-title ' + (winnerIdx===0 ? 'p1':'p2');
+    this.el.victorySub.textContent = 'Victory in ' + s.moveCount + ' actions';
+    this.el.victoryOverlay.classList.add('show');
+    this.audio.victory();
+    const L = this.renderer.layout;
+    const color = winnerIdx===0 ? '#e2483d' : '#3d8fe2';
+    this.renderer.particles.burst(L.size/2, L.size*0.4, color, 90);
+    setTimeout(()=> this.renderer.particles.burst(L.size*0.3, L.size*0.5, '#e8c377', 40), 150);
+    setTimeout(()=> this.renderer.particles.burst(L.size*0.7, L.size*0.5, '#e8c377', 40), 300);
+  }
+
+  drawHowtoDemo(){
+    const host = document.getElementById('howtoDemo');
+    const c = document.createElement('canvas');
+    c.width = 260; c.height = 130; c.style.width='260px'; c.style.height='130px';
+    host.appendChild(c);
+    const ctx = c.getContext('2d');
+    let t = 0;
+    const cell = 26, gap = 5, ox = 20, oy = 15;
+    function cx(i){ return ox + i*(cell+gap); }
+    function draw(){
+      t += 0.02;
+      ctx.clearRect(0,0,c.width,c.height);
+      for(let r=0;r<3;r++) for(let col=0;col<7;col++){
+        ctx.fillStyle = (r+col)%2===0 ? '#332c22' : '#2a251c';
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(cx(col),oy+r*(cell+gap),cell,cell,4) : ctx.rect(cx(col),oy+r*(cell+gap),cell,cell);
+        ctx.fill();
+      }
+      // wall
+      ctx.fillStyle = '#c9a24d';
+      ctx.fillRect(cx(3), oy+cell, cell*2+gap, gap);
+      // pawn bobbing towards wall then stepping around
+      const phase = (Math.sin(t)+1)/2;
+      const pr = 1, pc = 1 + phase*1.6;
+      ctx.beginPath();
+      ctx.arc(cx(pc)+cell/2, oy+pr*(cell+gap)+cell/2, cell*0.32, 0, Math.PI*2);
+      ctx.fillStyle = '#e2483d';
+      ctx.shadowColor = '#e2483d'; ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  loop(now){
+    const dt = Math.min(48, now - this._lastT);
+    this._lastT = now;
+    this.renderer.step(dt);
+    const opts = {};
+    if(this.state.status==='playing' && !this.isAITurn()){
+      if(this.actionMode==='move' && this.hoverCellPos){
+        opts.hoverCell = this.hoverCellPos;
+      }
+      if(this.actionMode==='move'){
+        opts.validMoves = this.state.getValidMoves(this.state.turn);
+      }
+      if(this.actionMode==='wall' && this.hoverWallPos){
+        const {r,c} = this.hoverWallPos;
+        const valid = this.state.isWallPlacementValid(this.state.turn, this.wallOrientation, r, c);
+        opts.wallPreview = { orientation:this.wallOrientation, r, c, valid };
+      }
+    }
+    this.renderer.draw(this.state, opts);
+    requestAnimationFrame(this.loop);
+  }
+}
+
+/* ---------------- boot ---------------- */
+window.addEventListener('DOMContentLoaded', ()=>{
+  window.__quorador = new Game();
+});
+</script>
+</body>
+</html>
