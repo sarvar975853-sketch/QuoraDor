@@ -34,7 +34,7 @@ Run the installer to install QuoraDor.
 
 ## Web Version
 
-The web version is available through GitHub Pages.
+The web version is available through [GitHub Pages.](https://sarvar975853-sketch.github.io/QuoraDor/)
 
 ## License
 
